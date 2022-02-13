@@ -1,0 +1,49 @@
+{
+	"image": "ppeetteerrs/fyp:latest",
+	"runArgs": [
+		"--shm-size=1g",
+		"--gpus",
+		"all",
+		"--ulimit",
+		"memlock=-1",
+		"--ulimit",
+		"stack=67108864",
+		"--name",
+		"ct-cxr-toolkit"
+	],
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+	"workspaceFolder": "/workspace",
+	"mounts": [
+		"source=/home/peter/data,target=/data,readonly,type=bind,consistency=cached"
+	],
+	"extensions": [
+		"ms-python.vscode-pylance",
+		"ms-python.python",
+		"trungngo.autoflake",
+		"kevinkyang.auto-comment-blocks",
+		"ms-toolsai.jupyter",
+		"yzhang.markdown-all-in-one",
+		"christian-kohler.path-intellisense",
+		"njpwerner.autodocstring",
+	],
+	"settings": {
+		"python.analysis.typeCheckingMode": "basic",
+		"python.analysis.diagnosticSeverityOverrides": {
+			"reportPrivateImportUsage": "none"
+		},
+		"python.sortImports.path": "/home/user/mambaforge/envs/user/bin/isort",
+		"python.autoComplete.extraPaths": [
+			"${workspaceFolder}/**/*",
+			"/home/user/mambaforge/envs/user/pkgs/libopencv-4.5.2-py38hcdf9bf1_0/lib/*"
+		],
+		"python.analysis.extraPaths": [
+			"${workspaceFolder}/**/*",
+			"/home/user/mambaforge/envs/user/pkgs/libopencv-4.5.2-py38hcdf9bf1_0/lib/*"
+		],
+		"python.linting.flake8Args": [
+			"--ignore=E402,E203",
+			"--max-line-length=120"
+		],
+		"terminal.integrated.defaultProfile.linux": "zsh"
+	},
+}
