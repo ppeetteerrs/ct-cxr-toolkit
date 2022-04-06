@@ -8,7 +8,6 @@ import pandas as pd
 from ct.meta import check_series_consistency, check_unique, parse_meta
 from rich import print
 from tqdm.contrib.concurrent import process_map
-from utils.config import CONFIG
 
 from covid_ct.bad import BAD, MISALIGNED
 
@@ -19,27 +18,11 @@ def parse_subject(path: str) -> int:
     )
 
 
-def parse_id(path: str) -> str:
-    return path.split("/")[-1].replace(".dcm", "")
-
-
-def parse_dcm_fields():
-    dcms = list(glob(f"{CONFIG.COVID_CT_DIR}/**/**.dcm"))
-    parse = partial(
-        parse_meta,
-        subject=parse_subject,
-        id=parse_id,
-    )
-    records = process_map(parse, dcms, chunksize=1, desc="Parsing DICOM fields...")
-    df = pd.DataFrame.from_records([record for record in records if record is not None])
-    df.to_csv(CONFIG.OUTPUT_DIR / "covid_ct_meta.csv", index=False)
-
-
 def classify_images(df: pd.DataFrame) -> pd.DataFrame:
     """
     Classify images into localizer, lung and mediastinum. Filter out other types
     """
-    is_localizer = df["ImageType2"] == "LOCALIZER"
+    is_localizer = df["ScanOptions"] == "SURVIEW"
     is_lung = df["SeriesDescription"].str.contains("lung", na=False)
     is_med = df["SeriesDescription"].str.contains("med", na=False)
     df["Type"] = np.where(
@@ -49,16 +32,6 @@ def classify_images(df: pd.DataFrame) -> pd.DataFrame:
     )
     df = df.query("Type != 'others'").reset_index(drop=True)
     return df
-
-
-def select_min(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    For each subject, type pair, select series with minimum slice thickness
-    """
-    min_df: Any = df.iloc[df.groupby(["Subject", "Type"])["SliceThickness"].idxmin()]
-    min_pairs = min_df[["Subject", "SeriesNumber"]].values.tolist()
-    tmp_df = df.set_index(["Subject", "SeriesNumber"])
-    return tmp_df[tmp_df.index.isin(min_pairs)].reset_index()
 
 
 def filter_all_types(df: pd.DataFrame) -> pd.DataFrame:
