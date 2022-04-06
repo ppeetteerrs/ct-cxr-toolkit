@@ -32,24 +32,22 @@ class TimeProgressColumn(ProgressColumn):
         elapsed = task.finished_time if task.finished else task.elapsed
         remaining = task.time_remaining
 
-        elapsed_text = total_text = "-:--:--.---"
+        elapsed_text = total_text = "---"
 
         if elapsed is not None:
-            elapsed_text = str(timedelta(milliseconds=int(elapsed * 1000)))[:-3]
+            elapsed_text = timedelta(seconds=int(elapsed + 0.5))
 
             if remaining is not None:
-                total_text = str(
-                    timedelta(milliseconds=int(elapsed * 1000) + int(remaining * 1000))
-                )[:-3]
+                total_text = timedelta(seconds=int(elapsed + remaining + 0.5))
 
-        return Text(f"[{elapsed_text} / {total_text}]", style="progress.remaining")
+        return Text(f"[{elapsed_text}/{total_text}]", style="progress.remaining")
 
 
 class StepProgressColumn(ProgressColumn):
     def render(self, task: Task) -> Text:
 
         return Text(
-            f"{int(task.completed)} / {int(task.total)}", style="progress.percentage"
+            f"{int(task.completed)}/{int(task.total)}", style="progress.percentage"
         )
 
 
@@ -77,8 +75,8 @@ def track(
     transient: bool = False,
 ) -> Iterable[T]:
 
-    if isinstance(sequence, Sequence):
-        total = total or len(sequence)
+    sequence = list(sequence)
+    total = total or len(sequence)
 
     columns: List["ProgressColumn"] = [
         TextColumn("[progress.description]{task.description}"),
@@ -110,170 +108,3 @@ def track(
             description=description,
             update_period=0.1,
         )
-
-
-COVID_CT_BAD = [
-    5,
-    6,
-    7,
-    9,
-    11,
-    25,
-    35,
-    73,
-    76,
-    80,
-    81,
-    82,
-    88,
-    90,
-    108,
-    109,
-    113,
-    114,
-    124,
-    126,
-    127,
-    128,
-    129,
-    130,
-    136,
-    139,
-    145,
-    156,
-    158,
-    160,
-    177,
-    180,
-    191,
-    193,
-    199,
-    212,
-    215,
-    217,
-    240,
-    241,
-    243,
-    244,
-    257,
-    270,
-    277,
-    282,
-    290,
-    323,
-    341,
-    357,
-    362,
-    397,
-    421,
-    432,
-    500,
-    515,
-    516,
-    517,
-    518,
-    536,
-    572,
-    580,
-    585,
-    604,
-    605,
-    606,
-    613,
-    650,
-    652,
-    654,
-    659,
-    667,
-    668,
-    669,
-    670,
-    671,
-    685,
-    743,
-    748,
-    782,
-    790,
-    834,
-    835,
-    852,
-    853,
-    870,
-    988,
-    1009,
-    1012,
-    1036,
-    1039,
-    1041,
-    1049,
-    1051,
-    1052,
-    1053,
-    1073,
-    1085,
-    1089,
-    1106,
-]
-
-COVID_CT_MISALIGNED = [
-    3,
-    15,
-    92,
-    115,
-    116,
-    120,
-    121,
-    137,
-    154,
-    155,
-    169,
-    175,
-    195,
-    211,
-    214,
-    218,
-    231,
-    256,
-    260,
-    364,
-    371,
-    381,
-    388,
-    394,
-    403,
-    414,
-    418,
-    423,
-    437,
-    439,
-    441,
-    442,
-    445,
-    454,
-    468,
-    471,
-    475,
-    509,
-    512,
-    537,
-    558,
-    563,
-    564,
-    568,
-    574,
-    615,
-    679,
-    701,
-    702,
-    708,
-    715,
-    753,
-    757,
-    844,
-    851,
-    1028,
-    1062,
-    1098,
-    1099,
-    1102,
-]

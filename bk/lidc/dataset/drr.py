@@ -7,6 +7,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 import SimpleITK as sitk
+from ct.drr import get_drr2
 from deepdrr import MobileCArm, Volume
 from deepdrr.projector import Projector
 from tqdm import tqdm
@@ -14,8 +15,6 @@ from tqdm.contrib.concurrent import process_map
 from utils.cv import crop, min_max_normalize
 from utils.dicom import read_dcm
 from utils.utils import save_img, track
-
-warnings.filterwarnings("ignore")
 
 
 def get_drr(idx: int, output_dir: Path, tmp_dir: str):
@@ -50,26 +49,24 @@ def to_nifti(info: ProcInfo):
     )
 
 
-def covid_ct_drr(output_dir: Path):
-    df = pd.read_pickle(output_dir / "metadata.pkl")
-    items: List[Tuple[Tuple[str, ...], Tuple[str, ...]]] = df[
-        ["lung", "localizer"]
-    ].values.tolist()
+def lidc_drr(output_dir: Path):
 
-    tmp_dir = mkdtemp()
-    (output_dir / "localizer").mkdir(parents=True, exist_ok=True)
-    (output_dir / "lung").mkdir(parents=True, exist_ok=True)
-    (output_dir / "bones").mkdir(parents=True, exist_ok=True)
+    warnings.filterwarnings("ignore")
+    df = pd.read_pickle(output_dir / "metadata.pkl")
+    items: List[Tuple[str, ...]] = df["lung"].tolist()
+
+    # tmp_dir = mkdtemp()
     (output_dir / "drr").mkdir(parents=True, exist_ok=True)
     (output_dir / "nifti").mkdir(parents=True, exist_ok=True)
 
-    infos = [
-        ProcInfo(i, output_dir, lung_paths) for i, (lung_paths, _) in enumerate(items)
-    ]
+    # infos = [ProcInfo(i, output_dir, lung_paths) for i, lung_paths in enumerate(items)]
 
-    process_map(to_nifti, infos)
+    # process_map(to_nifti, infos)
 
-    for info in tqdm(infos):
-        drr_2d = get_drr(info.idx, info.out_dir, tmp_dir)
-        drr_2d = min_max_normalize(drr_2d)
-        save_img(drr_2d, info.out_dir / f"drr/{str(info.idx).zfill(6)}.png")
+    for i, item in tqdm(enumerate(items)):
+        img = read_dcm(item)[0]
+        drr_2d = get_drr2(img)
+        # to_nifti(info)
+        # drr_2d = get_drr(info.idx, info.out_dir, tmp_dir)
+        # drr_2d = min_max_normalize(drr_2d)
+        save_img(drr_2d, output_dir / f"drr/{str(i).zfill(6)}.png")

@@ -1,5 +1,4 @@
-from turtle import shape
-from typing import Collection, Iterable, List, Tuple, Union, cast
+from typing import List, Tuple, Union, cast
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -12,10 +11,10 @@ def use_inline():
 
 
 def use_widget():
-    matplotlib.use("ipympl")
+    matplotlib.use("module://ipympl.backend_nbagg")
 
 
-def plot(
+def plot_grid(
     imgs: Union[List[np.ndarray], List[List[np.ndarray]]], titles: List[str] = None
 ):
     use_inline()
@@ -40,8 +39,10 @@ def plot(
         for j in range(n_cols):
             if n_rows > 1:
                 ax = axes[i][j]
-            else:
+            elif n_cols > 1:
                 ax = axes[j]
+            else:
+                ax = axes
             ax.axes.xaxis.set_visible(False)
             ax.axes.yaxis.set_visible(False)
             if i == 0:
@@ -51,27 +52,16 @@ def plot(
             ax.imshow(img, cmap=cmap)
 
 
-def plot_imgs(imgs: List[np.ndarray], shape: Tuple[int, int]):
-    total = np.prod(shape)
-    assert total == len(imgs), "Incompatible shape"
-    imgs = [
-        np.concatenate(imgs[i * shape[0] : (i + 1) * shape[0]], axis=0)
-        for i in range(shape[1])
-    ]
-    _, ax = plt.subplots(figsize=(shape[0] * 5, shape[1] * 5))
-    ax.imshow(np.concatenate(imgs, axis=1), cmap="gray")
-
-
 def plot_volume(
     img: np.ndarray,
     axis: int = 0,
     value_range: Tuple[int, int] = None,
     size: int = 8,
 ):
-    assert len(img.shape) == 3, "Image is not 3D..."
-    assert (
-        "ipympl" in matplotlib.get_backend()
-    ), "Please add %matplotlib widget to top of notebook / cell."
+    use_widget()
+
+    if isinstance(img, List):
+        img = np.array(img)
 
     # Set figure pixel range
     if value_range is None:
@@ -88,7 +78,7 @@ def plot_volume(
     fig.canvas.footer_visible = False
 
     # Show first slice
-    l = plt.imshow(
+    ax = plt.imshow(
         first_slice,
         vmin=value_range[0],
         vmax=value_range[1],
@@ -97,46 +87,7 @@ def plot_volume(
 
     # Update
     def update(val):
-        l.set_data(img.take(int(val), axis=axis))
+        ax.set_data(img.take(int(val), axis=axis))
         fig.canvas.draw_idle()
 
     interact(update, val=IntSlider(min=0, max=img.shape[axis] - 1, value=1))
-
-
-def plot_slice(
-    img: np.ndarray,
-    value_range: Tuple[int, int] = None,
-    size: int = 8,
-):
-    assert len(img.shape) == 2, "Image is not 2D..."
-
-    # Set figure pixel range
-    if value_range is None:
-        value_range = (img.min(), img.max())
-
-    # Set figure size
-    rows, cols = img.shape
-    plt.figure(figsize=(size, int(size / cols * rows)))
-
-    plt.imshow(img, cmap="gray")
-
-
-def plot_stack(
-    imgs: Iterable[np.ndarray],
-    axis: int = 0,
-    value_range: Tuple[int, int] = None,
-    size: int = 8,
-):
-    img = combine(imgs, axis=axis)
-
-    assert len(img.shape) == 2, "Image is not 2D..."
-
-    # Set figure pixel range
-    if value_range is None:
-        value_range = (img.min(), img.max())
-
-    # Set figure size
-    rows, cols = img.shape
-    plt.figure(figsize=(size, int(size / cols * rows)))
-
-    plt.imshow(img, cmap="gray")

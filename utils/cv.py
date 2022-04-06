@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Tuple, Union
+from typing import Sequence, Tuple, Union
 
 import cv2 as cv
 import numpy as np
@@ -8,6 +8,16 @@ CONTOUR_IDX = 0 if int(cv.__version__[0]) >= 4 else 1
 
 def mask(img: np.ndarray, mask: np.ndarray, val: int = 0) -> np.ndarray:
     return np.where(mask, img, val)
+
+
+def circle_mask(vol_3d: np.ndarray) -> np.ndarray:
+    N = vol_3d.shape[1]
+    center = N // 2
+    for i in range(N):
+        for j in range(N):
+            if ((i - center) ** 2 + (j - center) ** 2) > (N // 2 - 1) ** 2:
+                vol_3d[:, i, j] = 0
+    return vol_3d
 
 
 def remove_border(img: np.ndarray, tol=50) -> np.ndarray:
@@ -53,7 +63,7 @@ def crop(img: np.ndarray, size: Union[Tuple[int, int], int] = None) -> np.ndarra
     )
 
 
-def concat(imgs: Iterable[np.ndarray], axis=1) -> np.ndarray:
+def concat(imgs: Sequence[np.ndarray], axis=1) -> np.ndarray:
     return np.concatenate(imgs, axis=axis)
 
 
@@ -85,7 +95,8 @@ def renoise(
     return img
 
 
-def min_max_normalize(img: np.ndarray, max_val: int = 255) -> np.ndarray:
+def min_max_normalize(img: np.ndarray) -> np.ndarray:
     lower = img.min()
-    upper = img.max()
-    return ((img - lower) / (upper - lower) * max_val).astype(np.uint8)
+    upper = np.percentile(img, 97)
+    img[img > upper] = upper
+    return ((img - lower) / (upper - lower) * 255).astype(np.uint8)

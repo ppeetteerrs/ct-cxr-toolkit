@@ -6,7 +6,7 @@ from typing import List
 import cv2 as cv
 import numpy as np
 
-from utils.img import center_crop, remove_border
+from utils.cv import crop, remove_border
 
 
 class Pathology(Enum):
@@ -74,8 +74,7 @@ class CheXpertImg:
 
     def proc_img(self, size: int, base_dir: Path) -> np.ndarray:
         img = remove_border(self.img(base_dir))
-        img = center_crop(img)
-        img = cv.resize(img, (size, size))
+        img = crop(img, size=size)
 
         if np.mean(img) < 50:
             print(img, "has low brightness")

@@ -6,17 +6,14 @@ from typing import Tuple, cast
 
 import numpy as np
 import pandas as pd
-from parse_data.chexpert.utils import CheXpertImg
+from chexpert.metadata.utils import CheXpertImg
 from tqdm import tqdm
 
 from utils.config import CONFIG
 from utils.lmdb import LMDBImageWriter, chexpert_indexer
 
-CONFIG.CHEXPERT_TRAIN_LMDB.mkdir(parents=True, exist_ok=True)
-CONFIG.CHEXPERT_TEST_LMDB.mkdir(parents=True, exist_ok=True)
-
-TRAIN_CSV = CONFIG.CHEXPERT_DIR / "train.csv"
-TEST_CSV = CONFIG.CHEXPERT_DIR / "valid.csv"
+# CONFIG.CHEXPERT_TRAIN_LMDB.mkdir(parents=True, exist_ok=True)
+# CONFIG.CHEXPERT_TEST_LMDB.mkdir(parents=True, exist_ok=True)
 
 
 def proc_img(
@@ -56,8 +53,8 @@ def proc_df(df: pd.DataFrame, img_dir: Path, lmdb_dir: Path):
 
 if __name__ == "__main__":
     # Read train.csv and valid.csv
-    train_df = cast(pd.DataFrame, pd.read_csv(TRAIN_CSV))
-    test_df = cast(pd.DataFrame, pd.read_csv(TEST_CSV))
+    train_df = cast(pd.DataFrame, pd.read_csv(CONFIG.CHEXPERT_DIR / "train.csv"))
+    test_df = cast(pd.DataFrame, pd.read_csv(CONFIG.CHEXPERT_DIR / "valid.csv"))
     df = pd.concat([train_df, test_df])
 
     # Remove root path of extracted folder
@@ -87,10 +84,12 @@ if __name__ == "__main__":
 
     # Split dataframe into train and test set
     train_df = interested_df.iloc[:55000, :].copy(deep=True).reset_index(drop=True)
+    pd.to_pickle(train_df, str(CONFIG.OUTPUT_DIR / "chexpert_train_meta.pkl"))
     test_df = interested_df.iloc[55000:, :].copy(deep=True).reset_index(drop=True)
+    pd.to_pickle(test_df, str(CONFIG.OUTPUT_DIR / "chexpert_test_meta.pkl"))
 
-    print("Processing training images...")
-    proc_df(train_df, CONFIG.CHEXPERT_DIR, CONFIG.CHEXPERT_TRAIN_LMDB)
+    # print("Processing training images...")
+    # proc_df(train_df, CONFIG.CHEXPERT_DIR, CONFIG.CHEXPERT_TRAIN_LMDB)
 
-    print("Processing test images...")
-    proc_df(test_df, CONFIG.CHEXPERT_DIR, CONFIG.CHEXPERT_TEST_LMDB)
+    # print("Processing test images...")
+    # proc_df(test_df, CONFIG.CHEXPERT_DIR, CONFIG.CHEXPERT_TEST_LMDB)
