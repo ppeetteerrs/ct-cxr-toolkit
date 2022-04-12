@@ -6,10 +6,12 @@ from typing import Tuple
 import cv2 as cv
 import numpy as np
 import SimpleITK as sitk
+from lib.cv import crop, min_max_normalize
 from tqdm.contrib.concurrent import process_map
-from utils.config import CONFIG
-from utils.cv import crop, min_max_normalize
 
+DATA_DIR = 256
+RESOLUTION = 256
+OUTPUT_LMDB = True
 
 def proc_item(arg: Tuple[int, Path, str]):
     i, dcm_path, folder = arg
