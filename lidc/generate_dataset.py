@@ -11,6 +11,7 @@ from typing import List, Tuple
 warnings.filterwarnings("ignore")
 logging.disable()
 
+import SimpleITK as sitk
 from lib.ct.drr import get_drr
 from lib.ct.segmentation import segment
 from lib.cv import crop, project, remove_border
@@ -31,13 +32,14 @@ if __name__ == "__main__":
     seg_model = mask.get_model("unet", "R231")
 
     if OUTPUT_LMDB:
-        (Path("lidc/output") / "lmdb").mkdir(parents=True, exist_ok=True)
-        writer = LMDBImageWriter(Path("lidc/output") / "lmdb")
+        (Path("lidc/output") / "lidc_lmdb").mkdir(parents=True, exist_ok=True)
+        writer = LMDBImageWriter(Path("lidc/output") / "lidc_lmdb")
         writer.set_length(len(items))
     else:
         (Path("lidc/output") / "body").mkdir(parents=True, exist_ok=True)
         (Path("lidc/output") / "lung").mkdir(parents=True, exist_ok=True)
         (Path("lidc/output") / "bones").mkdir(parents=True, exist_ok=True)
+        (Path("covid_ct/output") / "soft").mkdir(parents=True, exist_ok=True)
         (Path("lidc/output") / "outer").mkdir(parents=True, exist_ok=True)
         (Path("lidc/output") / "drr").mkdir(parents=True, exist_ok=True)
         writer = None
@@ -46,7 +48,6 @@ if __name__ == "__main__":
         list(enumerate(items)), desc="Generating body, lung, bones, outer"
     ):
         lung_sitk, lung_np = read_dcm(list(lung_paths), clip=True)
-
         lung_mask, body_mask, bones_mask = segment(
             lung_sitk, lung_np, seg_model=seg_model
         )
@@ -54,6 +55,7 @@ if __name__ == "__main__":
         body = project(lung_np * body_mask, crop_size=RESOLUTION)
         lung = project(lung_np * lung_mask, crop_size=RESOLUTION)
         bones = project(lung_np * bones_mask, crop_size=RESOLUTION)
+        soft = project(med_np * body_mask * (~bones_mask), crop_size=RESOLUTION)
         outer = project(lung_np * body_mask * (~lung_mask), crop_size=RESOLUTION)
 
         # Save images to different places
@@ -63,11 +65,13 @@ if __name__ == "__main__":
             writer.set_img((idx, "body"), body)
             writer.set_img((idx, "lung"), lung)
             writer.set_img((idx, "bones"), bones)
+            writer.set_img((idx, "soft"), soft)
             writer.set_img((idx, "outer"), outer)
         else:
             save_img(body, f"lidc/output/body/{str(idx).zfill(10)}.png")
             save_img(lung, f"lidc/output/lung/{str(idx).zfill(10)}.png")
             save_img(bones, f"lidc/output/bones/{str(idx).zfill(10)}.png")
+            save_img(soft, f"covid_ct/output/soft/{str(idx).zfill(10)}.png")
             save_img(outer, f"lidc/output/outer/{str(idx).zfill(10)}.png")
 
     for idx, (subject, lung_paths) in tqdm(
